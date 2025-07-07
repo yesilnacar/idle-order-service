@@ -1,54 +1,53 @@
 # IdleOrderService
 
-IdleOrderService, sipariş yönetimi ve kullanıcı işlemlerini yöneten, çok katmanlı mimariye sahip bir .NET projesidir. Proje, API, Application, Domain, Core ve Infrastructure katmanlarından oluşur.
+IdleOrderService is a multi-layered .NET project that manages order processing and user operations. The project consists of API, Application, Domain, Core, and Infrastructure layers.
 
-## Klasör Yapısı
+## Folder Structure
 
 ```
 src/
-  IdleOrderService.Api/           # REST API katmanı
-  IdleOrderService.Application/   # Uygulama servisleri ve iş mantığı
-  IdleOrderService.Core/          # Temel altyapı, mediator ve event yapıları
-  IdleOrderService.Domain/        # Domain modelleri ve iş kuralları
-  IdleOrderService.Infra/         # Altyapı, veri erişim ve dış servis entegrasyonları
+  IdleOrderService.Api/           # REST API layer
+  IdleOrderService.Application/   # Application services and business logic
+  IdleOrderService.Core/          # Core infrastructure, mediator, and event structures
+  IdleOrderService.Domain/        # Domain models and business rules
+  IdleOrderService.Infra/         # Infrastructure, data access, and external service integrations
 ```
 
-## Kurulum
+## Installation
 
-1. Depoyu klonlayın:
+1. Clone the repository:
    ```sh
    git clone <repo-url>
    cd IdleOrderService
    ```
-2. Gerekli NuGet paketlerini yükleyin:
+2. Restore required NuGet packages:
    ```sh
    dotnet restore
    ```
 
-## Çalıştırma
+## Running
 
-API projesini başlatmak için:
+To start the API project:
 
 ```sh
 cd src/IdleOrderService.Api
  dotnet run
 ```
 
-API varsayılan olarak `http://localhost:5000` adresinde çalışacaktır.
+The API will run by default at `http://localhost:5000`.
 
-## Katmanlar Hakkında
+## About the Layers
 
-- **Api**: HTTP isteklerini karşılar, controller'lar burada bulunur.
-- **Application**: Komutlar, handler'lar ve DTO'lar burada yer alır.
-- **Core**: Ortak altyapı, event ve mediator yapıları.
-- **Domain**: Temel domain modelleri ve iş kuralları.
-- **Infra**: Veri erişimi, migration ve dış servis entegrasyonları.
+- **Api**: Handles HTTP requests; controllers are located here.
+- **Application**: Contains commands, handlers, and DTOs.
+- **Core**: Shared infrastructure, event, and mediator structures.
+- **Domain**: Core domain models and business rules.
+- **Infra**: Data access, migration, and external service integrations.
 
-## Katkı Sağlama
+## Contributing
 
-Katkıda bulunmak için lütfen bir fork oluşturun ve pull request gönderin.
+To contribute, please create a fork and submit a pull request.
 
-## Lisans
+## License
 
-Bu proje MIT lisansı ile lisanslanmıştır.
-
+This project is licensed under the MIT License.
