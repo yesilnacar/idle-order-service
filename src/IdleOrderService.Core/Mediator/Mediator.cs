@@ -1,35 +1,46 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace IdleOrderService.Core.Mediator;
-
-public class Mediator(IServiceProvider serviceProvider) : IMediator
+namespace IdleOrderService.Core.Mediator
 {
-    public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+    public class Mediator(IServiceProvider serviceProvider) : IMediator
     {
-        var handlerType = typeof(IRequestHandler<,>).MakeGenericType(request.GetType(), typeof(TResponse));
-        
-        var handler = serviceProvider.GetService(handlerType);
-        if (handler == null)
-            throw new InvalidOperationException($"Handler not found for {request.GetType().Name}");
+        private static readonly ConcurrentDictionary<(Type req, Type res), Type> _handlerTypeCache = new();
 
-        var pipelineType = typeof(IExecutionMiddleware<,>).MakeGenericType(request.GetType(), typeof(TResponse));
-        var middlewares = serviceProvider.GetServices(pipelineType)
-            .Cast<dynamic>()
-            .Reverse()
-            .ToList();
-
-        Func<IRequest<TResponse>, CancellationToken, Task<TResponse>> handlerInvoker =
-            (req, ct) => ((dynamic)handler).HandleAsync((dynamic)req, ct);
-
-        Func<IRequest<TResponse>, CancellationToken, Task<TResponse>> pipelineChain = (req, ct) => handlerInvoker(req, ct);
-
-        foreach (var middleware in middlewares)
+        public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
         {
-            var next = pipelineChain;
-            pipelineChain = async (req, ct) =>
-                await middleware.HandleAsync((dynamic)req, new Func<object, Task<TResponse>>(ctx => next((IRequest<TResponse>)ctx, ct)), cancellationToken);
-        }
+            var requestType  = request.GetType();
+            var responseType = typeof(TResponse);
 
-        return await pipelineChain(request, cancellationToken);
+            var handlerType = _handlerTypeCache.GetOrAdd(
+                (requestType, responseType),
+                key => typeof(IRequestHandler<,>).MakeGenericType(key.req, key.res)
+            );
+            var handler = serviceProvider.GetService(handlerType)
+                              ?? throw new InvalidOperationException($"Handler not found: {requestType.Name}");
+
+            var pipelineType = typeof(IExecutionMiddleware<,>)
+                .MakeGenericType(requestType, responseType);
+
+            var middlewares = serviceProvider.GetServices(pipelineType)
+                .Cast<dynamic>()
+                .Reverse()
+                .ToList();
+
+            Func<IRequest<TResponse>, CancellationToken, Task<TResponse>> pipeline = (req, ct) 
+                  => ((dynamic)handler).HandleAsync((dynamic)req, ct);
+
+            foreach (var mw in middlewares)
+            {
+                var next = pipeline;
+                pipeline = (req, ct) => mw.HandleAsync(
+                        (dynamic)req,
+                        new Func<object, Task<TResponse>>(ctx => next((IRequest<TResponse>)ctx, ct)),
+                        ct
+                    );
+            }
+
+            return await pipeline(request, cancellationToken);
+        }
     }
 }
