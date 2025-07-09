@@ -42,6 +42,11 @@ services.AddEndpointsApiExplorer();
 services.AddSwaggerGen();
 
 var app = builder.Build();
+
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://localhost:5000";
+logger.LogInformation("Application is running on: {Urls}", urls);
+
 app.UseSwagger();
 app.UseSwaggerUI();
 app.MapControllers();
