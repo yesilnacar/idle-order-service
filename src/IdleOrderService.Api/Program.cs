@@ -21,8 +21,8 @@ services.AddDbContextPool<AppDbContext>(options =>
 });
 services.AddInfra();
 
-services.AddSingleton<IEventBus, InMemoryEventBus>();
-// services.AddSingleton<IEventBus, KafkaEventBus>();
+// services.AddSingleton<IEventBus, InMemoryEventBus>();
+services.AddSingleton<IEventBus, KafkaEventBus>();
 
 services.AddScoped<IMediator, Mediator>();
 
@@ -35,7 +35,7 @@ services.DecorateAllEventHandlersWithRetry()
 services.AddScoped<IRequestHandler<RegisterUserCommand, UserDto>, RegisterUserCommandHandler>();
 
 services.AddHostedService<OutboxDispatcher>();
-// services.AddHostedService<KafkaEventConsumer>();
+services.AddHostedService<KafkaEventConsumer>();
 
 services.AddControllers();
 services.AddEndpointsApiExplorer();

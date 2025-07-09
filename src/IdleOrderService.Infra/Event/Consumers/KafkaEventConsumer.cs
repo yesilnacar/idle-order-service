@@ -13,7 +13,7 @@ public class KafkaEventConsumer(IServiceProvider serviceProvider, ILogger<KafkaE
     {
         var config = new ConsumerConfig
         {
-            BootstrapServers = "localhost:9092",
+            BootstrapServers = "kafka:9092",
             GroupId = "idle-order-group",
             AutoOffsetReset = AutoOffsetReset.Earliest
         };
