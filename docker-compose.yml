@@ -36,6 +36,20 @@ services:
     depends_on:
       - zookeeper
 
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - kafka
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        sleep 10 &&
+        kafka-topics --bootstrap-server kafka:9092 \
+          --create --if-not-exists \
+          --topic UserRegisteredEvent \
+          --partitions 1 --replication-factor 1
+        
   postgres:
     image: postgres:15
     container_name: postgres
