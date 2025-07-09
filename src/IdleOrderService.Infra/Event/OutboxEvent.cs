@@ -8,4 +8,5 @@ public class OutboxEvent
     public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
     public bool Processed { get; set; } = false;
     public DateTime? ProcessedAt { get; set; }
+    public int Priority { get; set; } = 1;
 }

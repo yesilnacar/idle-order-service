@@ -5,6 +5,8 @@ using IdleOrderService.Core.Event;
 using IdleOrderService.Core.Mediator;
 using IdleOrderService.Domain.Event;
 using IdleOrderService.Infra.Event;
+using IdleOrderService.Infra.Event.Consumers;
+using IdleOrderService.Infra.Event.EventBuses;
 using IdleOrderService.Infra.Extensions;
 using IdleOrderService.Infra.Persistence;
 using IdleOrderService.Infra.Pipeline;
@@ -20,6 +22,7 @@ services.AddDbContextPool<AppDbContext>(options =>
 services.AddInfra();
 
 services.AddSingleton<IEventBus, InMemoryEventBus>();
+// services.AddSingleton<IEventBus, KafkaEventBus>();
 
 services.AddScoped<IMediator, Mediator>();
 
@@ -32,6 +35,7 @@ services.DecorateAllEventHandlersWithRetry()
 services.AddScoped<IRequestHandler<RegisterUserCommand, UserDto>, RegisterUserCommandHandler>();
 
 services.AddHostedService<OutboxDispatcher>();
+// services.AddHostedService<KafkaEventConsumer>();
 
 services.AddControllers();
 services.AddEndpointsApiExplorer();

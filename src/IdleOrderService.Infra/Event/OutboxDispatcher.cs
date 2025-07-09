@@ -2,6 +2,7 @@ using System.Text.Json;
 using IdleOrderService.Core.Event;
 using IdleOrderService.Infra.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -9,15 +10,13 @@ namespace IdleOrderService.Infra.Event;
 
 public class OutboxDispatcher : BackgroundService
 {
-    private readonly AppDbContext _dbContext;
-    private readonly IEventBus _eventBus;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<OutboxDispatcher> _logger;
     private readonly TimeSpan _interval = TimeSpan.FromSeconds(5);
 
-    public OutboxDispatcher(AppDbContext dbContext, IEventBus eventBus, ILogger<OutboxDispatcher> logger)
+    public OutboxDispatcher(IServiceScopeFactory serviceScopeFactory, ILogger<OutboxDispatcher> logger)
     {
-        _dbContext = dbContext;
-        _eventBus = eventBus;
+        _serviceScopeFactory = serviceScopeFactory;
         _logger = logger;
     }
 
@@ -29,7 +28,10 @@ public class OutboxDispatcher : BackgroundService
         {
             try
             {
-                var events = await _dbContext.OutboxEvents
+                using var scope = _serviceScopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var events = await dbContext.OutboxEvents
                     .Where(x => !x.Processed)
                     .OrderBy(x => x.OccurredAt)
                     .ToListAsync(stoppingToken);
@@ -47,12 +49,13 @@ public class OutboxDispatcher : BackgroundService
 
                         var @event = (IEvent)JsonSerializer.Deserialize(outboxEvent.Payload, eventType)!;
 
-                        await _eventBus.PublishAsync(@event, stoppingToken);
- 
+                        var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
+                        await eventBus.PublishAsync(@event, stoppingToken);
+
                         outboxEvent.Processed = true;
                         outboxEvent.ProcessedAt = DateTime.UtcNow;
 
-                        await _dbContext.SaveChangesAsync(stoppingToken);
+                        await dbContext.SaveChangesAsync(stoppingToken);
 
                         _logger.LogInformation("Event {EventType} dispatched successfully.", outboxEvent.Type);
                     }

@@ -20,21 +20,47 @@ src/
    git clone <repo-url>
    cd IdleOrderService
    ```
-2. Restore required NuGet packages:
+2. Restore required NuGet packages (if you want to run locally):
    ```sh
    dotnet restore
    ```
 
-## Running
+## Running with Docker Compose
 
-To start the API project:
+You can run the API, PostgreSQL, Kafka, and Zookeeper services together using Docker Compose:
 
 ```sh
-cd src/IdleOrderService.Api
- dotnet run
+docker-compose up -d --build
 ```
 
-The API will run by default at `http://localhost:5000`.
+This will start:
+- **IdleOrderService.Api** (on port 5000)
+- **PostgreSQL** (Database: `idle_order_db`, User: `myuser`, Password: `mysecretpassword`)
+- **Kafka**
+- **Zookeeper**
+
+> The API will be accessible at `http://localhost:5000`.
+> The API container uses an internal connection string to reach PostgreSQL (`Host=postgres;...`).
+> If you want to run the API locally (outside Docker), make sure your connection string in `appsettings.json` uses `Host=localhost`.
+> Kafka is accessible as `kafka:9092` from within containers, and as `localhost:9092` from your host.
+
+### Notes on Docker Build
+- The Dockerfile for the API is located at `src/IdleOrderService.Api/Dockerfile`.
+- The build context in `docker-compose.yml` is set to the repository root to include the solution and all projects.
+- Environment variables for connection strings and Kafka are set in the compose file and override appsettings.
+
+## Running the API Locally (without Docker Compose)
+
+If you prefer to run the API on your host machine:
+
+1. Make sure PostgreSQL, Kafka, and Zookeeper are running (can be started with Docker Compose).
+2. Use the default connection string in `appsettings.json` (Host=localhost).
+3. Start the API:
+   ```sh
+   cd src/IdleOrderService.Api
+   dotnet run
+   ```
+4. The API will run by default at `http://localhost:5000`.
 
 ## About the Layers
 
