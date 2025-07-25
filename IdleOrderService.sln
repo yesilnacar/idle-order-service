@@ -15,7 +15,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdleOrderService.Domain", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdleOrderService.Infra", "src\IdleOrderService.Infra\IdleOrderService.Infra.csproj", "{DF406B1D-9F22-457E-B2AF-332BA9C84A5A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdleOrderService.Test", "IdleOrderService.Test\IdleOrderService.Test.csproj", "{26B6477B-0934-46F2-9CCE-A078102C006A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdleOrderService.Test", "test\IdleOrderService.Test\IdleOrderService.Test.csproj", "{26B6477B-0934-46F2-9CCE-A078102C006A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
