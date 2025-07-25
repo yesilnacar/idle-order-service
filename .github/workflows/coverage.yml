@@ -1,0 +1,36 @@
+name: Run Tests and Collect Coverage
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run tests with coverage
+        run: dotnet test --collect:"XPlat Code Coverage"
+
+      - name: Extract coverage result (Cobertura)
+        run: |
+          mkdir -p coverage
+          find . -name 'coverage.cobertura.xml' -exec cp {} coverage/ \;
+
+      - name: Print coverage file summary
+        run: |
+          echo "Generated files:"
+          ls -l coverage
