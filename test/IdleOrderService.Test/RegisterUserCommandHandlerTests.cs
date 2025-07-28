@@ -16,9 +16,8 @@ public class RegisterUserCommandHandlerTests
     public async Task HandleAsync_ShouldReturnUserDto_AndSaveEvent()
     {
         // Arrange
-        var eventBusMock = new Mock<IEventBus>();
         var eventStoreMock = new Mock<IEventStore>();
-        var handler = new RegisterUserCommandHandler(eventBusMock.Object, eventStoreMock.Object);
+        var handler = new RegisterUserCommandHandler(eventStoreMock.Object);
         var command = new RegisterUserCommand { Email = "test@example.com", FullName = "Test User" };
         var cancellationToken = CancellationToken.None;
 

@@ -14,7 +14,7 @@ public class DefaultEventSerializer : IEventSerializer
 {
     public string Serialize<TEvent>(TEvent @event)
     {
-        return System.Text.Json.JsonSerializer.Serialize(@event, @event.GetType());
+        return System.Text.Json.JsonSerializer.Serialize(@event, @event?.GetType() ?? typeof(object));
     }
 }
 

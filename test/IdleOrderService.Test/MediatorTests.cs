@@ -11,7 +11,7 @@ namespace IdleOrderService.Test;
 
 public class MediatorTests
 {
-    public class DummyRequest : IRequest<string> { public string Value { get; set; } }
+    public class DummyRequest : IRequest<string> { public required string Value { get; set; } }
     public class DummyHandler : IRequestHandler<DummyRequest, string>
     {
         public Task<string> HandleAsync(DummyRequest request, CancellationToken cancellationToken) => Task.FromResult($"Handled: {request.Value}");
