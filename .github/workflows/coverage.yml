@@ -47,7 +47,7 @@ jobs:
       - name: Fail if coverage is below threshold
         run: |
           threshold=50
-          coverage=$(echo "$COVERAGE" | cut -d'.' -f1) # integer kısmı
+          coverage=$(echo "$COVERAGE" | cut -d'.' -f1) # integer part
           if [ "$coverage" -lt "$threshold" ]; then
             echo "❌ Coverage ($COVERAGE%) is below threshold ($threshold%)"
             exit 1
