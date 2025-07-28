@@ -24,6 +24,11 @@ jobs:
     - name: Install ReportGenerator
       run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
+    - name: Install XML tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libxml2-utils
+
     - name: Restore dependencies
       run: dotnet restore
 
@@ -38,20 +43,29 @@ jobs:
     - name: Extract coverage data
       id: coverage
       run: |
-        # Extract line coverage percentage
-        LINE_COVERAGE=$(grep -o 'Line coverage:</th><td[^>]*>[^<]*\([0-9.]*\)%' ./TestResults/coverage-report/index.html | grep -o '[0-9.]*%' | head -1)
-        BRANCH_COVERAGE=$(grep -o 'Branch coverage:</th><td[^>]*>[^<]*\([0-9.]*\)%' ./TestResults/coverage-report/index.html | grep -o '[0-9.]*%' | head -1)
+        # Extract line coverage percentage using xmllint
+        LINE_COVERAGE=$(xmllint --xpath "string(//coverage/@line-rate)" ./TestResults/*/coverage.cobertura.xml | awk '{printf "%.1f%%", $1 * 100}')
+        BRANCH_COVERAGE=$(xmllint --xpath "string(//coverage/@branch-rate)" ./TestResults/*/coverage.cobertura.xml | awk '{printf "%.1f%%", $1 * 100}')
         
         # Extract test count
-        TEST_COUNT=$(grep -o 'Total:</th><td[^>]*>[^<]*\([0-9]*\)' ./TestResults/coverage-report/index.html | grep -o '[0-9]*' | head -1)
+        TEST_COUNT=$(xmllint --xpath "count(//coverage/packages/package/classes/class)" ./TestResults/*/coverage.cobertura.xml)
         
         # Extract covered/total lines
-        COVERED_LINES=$(grep -o 'Covered lines:</th><td[^>]*>[^<]*\([0-9]*\)' ./TestResults/coverage-report/index.html | grep -o '[0-9]*' | head -1)
-        TOTAL_LINES=$(grep -o 'Coverable lines:</th><td[^>]*>[^<]*\([0-9]*\)' ./TestResults/coverage-report/index.html | grep -o '[0-9]*' | head -1)
+        COVERED_LINES=$(xmllint --xpath "sum(//coverage/packages/package/classes/class/lines/line/@hits)" ./TestResults/*/coverage.cobertura.xml)
+        TOTAL_LINES=$(xmllint --xpath "count(//coverage/packages/package/classes/class/lines/line)" ./TestResults/*/coverage.cobertura.xml)
         
         # Extract covered/total branches
-        COVERED_BRANCHES=$(grep -o 'Covered branches:</th><td[^>]*>[^<]*\([0-9]*\)' ./TestResults/coverage-report/index.html | grep -o '[0-9]*' | head -1)
-        TOTAL_BRANCHES=$(grep -o 'Total branches:</th><td[^>]*>[^<]*\([0-9]*\)' ./TestResults/coverage-report/index.html | grep -o '[0-9]*' | head -1)
+        COVERED_BRANCHES=$(xmllint --xpath "sum(//coverage/packages/package/classes/class/lines/line/conditions/condition[@covered='true']/@number)" ./TestResults/*/coverage.cobertura.xml)
+        TOTAL_BRANCHES=$(xmllint --xpath "sum(//coverage/packages/package/classes/class/lines/line/conditions/condition/@number)" ./TestResults/*/coverage.cobertura.xml)
+        
+        # Set default values if empty
+        LINE_COVERAGE=${LINE_COVERAGE:-"0.0%"}
+        BRANCH_COVERAGE=${BRANCH_COVERAGE:-"0.0%"}
+        TEST_COUNT=${TEST_COUNT:-"0"}
+        COVERED_LINES=${COVERED_LINES:-"0"}
+        TOTAL_LINES=${TOTAL_LINES:-"0"}
+        COVERED_BRANCHES=${COVERED_BRANCHES:-"0"}
+        TOTAL_BRANCHES=${TOTAL_BRANCHES:-"0"}
         
         echo "line_coverage=$LINE_COVERAGE" >> $GITHUB_OUTPUT
         echo "branch_coverage=$BRANCH_COVERAGE" >> $GITHUB_OUTPUT
