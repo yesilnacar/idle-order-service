@@ -34,3 +34,23 @@ jobs:
         run: |
           echo "Generated files:"
           ls -l coverage
+          
+      - name: Extract coverage percentage
+        run: |
+          xml_file=$(find . -name 'coverage.cobertura.xml' | head -n 1)
+          echo "Parsing coverage file: $xml_file"
+          line_rate=$(xmllint --xpath 'string(/coverage/@line-rate)' "$xml_file")
+          percent=$(awk "BEGIN { printf \"%.2f\", $line_rate * 100 }")
+          echo "Coverage: $percent%"
+          echo "COVERAGE=$percent" >> $GITHUB_ENV
+
+      - name: Fail if coverage is below threshold
+        run: |
+          threshold=50
+          coverage=$(echo "$COVERAGE" | cut -d'.' -f1) # integer kısmı
+          if [ "$coverage" -lt "$threshold" ]; then
+            echo "❌ Coverage ($COVERAGE%) is below threshold ($threshold%)"
+            exit 1
+          else
+            echo "✅ Coverage is sufficient: $COVERAGE%"
+          fi
