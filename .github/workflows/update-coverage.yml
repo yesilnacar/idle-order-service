@@ -39,19 +39,20 @@ jobs:
       id: coverage
       run: |
         # Extract line coverage percentage
-        LINE_COVERAGE=$(grep -o 'Line coverage:</th><td[^>]*>[^<]*\([0-9.]*\)%' ./TestResults/coverage-report/index.html | grep -o '[0-9.]*%' | head -1)
-        BRANCH_COVERAGE=$(grep -o 'Branch coverage:</th><td[^>]*>[^<]*\([0-9.]*\)%' ./TestResults/coverage-report/index.html | grep -o '[0-9.]*%' | head -1)
+        # Extract line coverage percentage
+        LINE_COVERAGE=$(xmllint --xpath "string(//coverage/@line-rate)" ./TestResults/coverage.cobertura.xml)
+        BRANCH_COVERAGE=$(xmllint --xpath "string(//coverage/@branch-rate)" ./TestResults/coverage.cobertura.xml)
         
         # Extract test count
-        TEST_COUNT=$(grep -o 'Total:</th><td[^>]*>[^<]*\([0-9]*\)' ./TestResults/coverage-report/index.html | grep -o '[0-9]*' | head -1)
+        TEST_COUNT=$(xmllint --xpath "string(//coverage/@tests)" ./TestResults/coverage.cobertura.xml)
         
         # Extract covered/total lines
-        COVERED_LINES=$(grep -o 'Covered lines:</th><td[^>]*>[^<]*\([0-9]*\)' ./TestResults/coverage-report/index.html | grep -o '[0-9]*' | head -1)
-        TOTAL_LINES=$(grep -o 'Coverable lines:</th><td[^>]*>[^<]*\([0-9]*\)' ./TestResults/coverage-report/index.html | grep -o '[0-9]*' | head -1)
+        COVERED_LINES=$(xmllint --xpath "string(//coverage/metrics/@covered-lines)" ./TestResults/coverage.cobertura.xml)
+        TOTAL_LINES=$(xmllint --xpath "string(//coverage/metrics/@total-lines)" ./TestResults/coverage.cobertura.xml)
         
         # Extract covered/total branches
-        COVERED_BRANCHES=$(grep -o 'Covered branches:</th><td[^>]*>[^<]*\([0-9]*\)' ./TestResults/coverage-report/index.html | grep -o '[0-9]*' | head -1)
-        TOTAL_BRANCHES=$(grep -o 'Total branches:</th><td[^>]*>[^<]*\([0-9]*\)' ./TestResults/coverage-report/index.html | grep -o '[0-9]*' | head -1)
+        COVERED_BRANCHES=$(xmllint --xpath "string(//coverage/metrics/@covered-branches)" ./TestResults/coverage.cobertura.xml)
+        TOTAL_BRANCHES=$(xmllint --xpath "string(//coverage/metrics/@total-branches)" ./TestResults/coverage.cobertura.xml)
         
         echo "line_coverage=$LINE_COVERAGE" >> $GITHUB_OUTPUT
         echo "branch_coverage=$BRANCH_COVERAGE" >> $GITHUB_OUTPUT
