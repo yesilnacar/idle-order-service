@@ -34,3 +34,30 @@ jobs:
         run: |
           echo "Generated files:"
           ls -l coverage
+          
+      - name: Install xmllint
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+          
+      - name: Extract coverage percentage
+        run: |
+          xml_file=$(find . -name 'coverage.cobertura.xml' | head -n 1)
+          if [ -z "$xml_file" ]; then
+            echo "❌ Error: coverage.cobertura.xml file not found."
+            exit 1
+          fi
+          echo "Parsing coverage file: $xml_file"
+          line_rate=$(xmllint --xpath 'string(/coverage/@line-rate)' "$xml_file")
+          percent=$(awk "BEGIN { printf \"%.2f\", $line_rate * 100 }")
+          echo "Coverage: $percent%"
+          echo "COVERAGE=$percent" >> $GITHUB_ENV
+
+      - name: Fail if coverage is below threshold
+        run: |
+          threshold=30
+          coverage=$(echo "$COVERAGE" | cut -d'.' -f1) # integer part
+          if [ "$coverage" -lt "$threshold" ]; then
+            echo "❌ Coverage ($COVERAGE%) is below threshold ($threshold%)"
+            exit 1
+          else
+            echo "✅ Coverage is sufficient: $COVERAGE%"
+          fi

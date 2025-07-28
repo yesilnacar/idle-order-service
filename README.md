@@ -1,79 +1,284 @@
 # IdleOrderService
 
-IdleOrderService is a multi-layered .NET project that manages order processing and user operations. The project consists of API, Application, Domain, Core, and Infrastructure layers.
+IdleOrderService is a multi-layered .NET project that implements a clean architecture pattern with event-driven design. The project manages user registration and order processing with comprehensive unit testing coverage.
 
-## Folder Structure
+## 🏗️ Architecture
+
+The project follows Clean Architecture principles with the following layers:
 
 ```
 src/
-  IdleOrderService.Api/           # REST API layer
-  IdleOrderService.Application/   # Application services and business logic
-  IdleOrderService.Core/          # Core infrastructure, mediator, and event structures
+  IdleOrderService.Api/           # REST API layer (Controllers, Program.cs)
+  IdleOrderService.Application/   # Application services (Commands, Handlers, DTOs)
+  IdleOrderService.Core/          # Core infrastructure (Mediator, Events, Interfaces)
   IdleOrderService.Domain/        # Domain models and business rules
-  IdleOrderService.Infra/         # Infrastructure, data access, and external service integrations
+  IdleOrderService.Infra/         # Infrastructure (Data access, Event buses, Decorators)
 ```
 
-## Installation
+## 🧪 Testing & Code Coverage
+
+The project includes comprehensive unit tests with **37.3% line coverage** and **33.8% branch coverage**.
+
+### Test Structure
+```
+test/
+  IdleOrderService.Test/
+    ├── Application Layer Tests
+    │   ├── RegisterUserCommandHandlerTests.cs
+    │   └── UserRegisteredEventHandlerTests.cs
+    ├── API Layer Tests
+    │   └── UsersControllerTests.cs
+    ├── Core Infrastructure Tests
+    │   ├── MediatorTests.cs
+    │   ├── InMemoryEventBusTests.cs
+    │   └── KafkaEventBusTests.cs
+    ├── Infrastructure Tests
+    │   ├── EfEventStoreTests.cs
+    │   ├── AppDbContextTests.cs
+    │   └── OutboxEventTests.cs
+    ├── Decorator Tests
+    │   ├── LoggingEventHandlerDecoratorTests.cs
+    │   └── RetryingEventHandlerDecoratorTests.cs
+    ├── Middleware Tests
+    │   ├── LoggingMiddlewareTests.cs
+    │   └── MetricsMiddlewareTests.cs
+    └── DI Configuration Tests
+        └── ServiceCollectionExtensionsTests.cs
+```
+
+### Running Tests
+```bash
+# Run all tests
+dotnet test
+
+# Run tests with coverage
+dotnet test --collect:"XPlat Code Coverage" --results-directory ./TestResults
+
+# Generate coverage report
+reportgenerator -reports:./TestResults/*/coverage.cobertura.xml -targetdir:./TestResults/coverage-report -reporttypes:Html
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
+- .NET 8.0 SDK
+- Docker & Docker Compose (for full stack)
+- PostgreSQL (if running locally)
+- Kafka (if running locally)
+
+### Installation
 
 1. Clone the repository:
-   ```sh
+   ```bash
    git clone <repo-url>
    cd IdleOrderService
    ```
-2. Restore required NuGet packages (if you want to run locally):
-   ```sh
+
+2. Restore NuGet packages:
+   ```bash
    dotnet restore
    ```
 
-## Running with Docker Compose
+## 🐳 Running with Docker Compose (Recommended)
 
-You can run the API, PostgreSQL, Kafka, and Zookeeper services together using Docker Compose:
+Start the complete stack with a single command:
 
-```sh
+```bash
 docker-compose up -d --build
 ```
 
 This will start:
-- **IdleOrderService.Api** (on port 5000)
-- **PostgreSQL** (Database: `idle_order_db`, User: `myuser`, Password: `mysecretpassword`)
-- **Kafka**
+- **IdleOrderService.Api** (http://localhost:5000)
+- **PostgreSQL** (Database: `idle_order_db`)
+- **Kafka** (localhost:9092)
 - **Zookeeper**
 
-> The API will be accessible at `http://localhost:5000`.
-> The API container uses an internal connection string to reach PostgreSQL (`Host=postgres;...`).
-> If you want to run the API locally (outside Docker), make sure your connection string in `appsettings.json` uses `Host=localhost`.
-> Kafka is accessible as `kafka:9092` from within containers, and as `localhost:9092` from your host.
+### API Endpoints
 
-### Notes on Docker Build
-- The Dockerfile for the API is located at `src/IdleOrderService.Api/Dockerfile`.
-- The build context in `docker-compose.yml` is set to the repository root to include the solution and all projects.
-- Environment variables for connection strings and Kafka are set in the compose file and override appsettings.
+Once running, you can access:
+- **Swagger UI**: http://localhost:5000/swagger
+- **Health Check**: http://localhost:5000/health
 
-## Running the API Locally (without Docker Compose)
+### Example API Usage
 
-If you prefer to run the API on your host machine:
+```bash
+# Register a new user
+curl -X POST "http://localhost:5000/api/users/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "fullName": "John Doe"
+  }'
+```
 
-1. Make sure PostgreSQL, Kafka, and Zookeeper are running (can be started with Docker Compose).
-2. Use the default connection string in `appsettings.json` (Host=localhost).
-3. Start the API:
-   ```sh
+## 🏃‍♂️ Running Locally
+
+### Option 1: Full Local Setup
+
+1. Start dependencies with Docker:
+   ```bash
+   docker-compose up -d postgres kafka zookeeper
+   ```
+
+2. Run the API locally:
+   ```bash
    cd src/IdleOrderService.Api
    dotnet run
    ```
-4. The API will run by default at `http://localhost:5000`.
 
-## About the Layers
+### Option 2: In-Memory Database (for development)
 
-- **Api**: Handles HTTP requests; controllers are located here.
-- **Application**: Contains commands, handlers, and DTOs.
-- **Core**: Shared infrastructure, event, and mediator structures.
-- **Domain**: Core domain models and business rules.
-- **Infra**: Data access, migration, and external service integrations.
+Modify `Program.cs` to use in-memory database for faster development:
 
-## Contributing
+```csharp
+services.AddDbContextPool<AppDbContext>(options =>
+{
+    options.UseInMemoryDatabase("IdleOrderDb");
+});
+```
 
-To contribute, please create a fork and submit a pull request.
+## 🏛️ Architecture Details
 
-## License
+### Event-Driven Architecture
 
-This project is licensed under the MIT License.
+The project implements an event-driven architecture with:
+
+- **Event Bus**: `IEventBus` interface with `InMemoryEventBus` and `KafkaEventBus` implementations
+- **Event Store**: `EfEventStore` for event persistence using Entity Framework
+- **Outbox Pattern**: `OutboxDispatcher` for reliable event publishing
+- **Decorators**: Logging and retry decorators for event handlers
+
+### Mediator Pattern
+
+Uses a custom mediator implementation for command/query handling:
+
+```csharp
+// Register a command handler
+services.AddScoped<IRequestHandler<RegisterUserCommand, UserDto>, RegisterUserCommandHandler>();
+
+// Use in controller
+var result = await _mediator.Send(command);
+```
+
+### Middleware Pipeline
+
+Custom middleware for cross-cutting concerns:
+
+```csharp
+services.AddScoped(typeof(IExecutionMiddleware<,>), typeof(LoggingMiddleware<,>));
+services.AddScoped(typeof(IExecutionMiddleware<,>), typeof(MetricsMiddleware<,>));
+```
+
+## 📊 Database Schema
+
+The project uses Entity Framework Core with PostgreSQL:
+
+### Outbox Events Table
+```sql
+CREATE TABLE outbox_events (
+    Id UUID PRIMARY KEY,
+    Type TEXT NOT NULL,
+    Payload TEXT NOT NULL,
+    OccurredAt TIMESTAMP WITH TIME ZONE NOT NULL,
+    Processed BOOLEAN DEFAULT FALSE,
+    ProcessedAt TIMESTAMP WITH TIME ZONE,
+    Priority INTEGER DEFAULT 1
+);
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+- `ASPNETCORE_URLS`: API listening URLs (default: http://localhost:5000)
+- `ConnectionStrings__Default`: PostgreSQL connection string
+- `Kafka__BootstrapServers`: Kafka broker addresses
+
+### App Settings
+Key configuration in `appsettings.json`:
+```json
+{
+  "ConnectionStrings": {
+    "Default": "Host=localhost;Database=idle_order_db;Username=myuser;Password=mysecretpassword"
+  },
+  "Kafka": {
+    "BootstrapServers": "localhost:9092"
+  }
+}
+```
+
+## 🧪 Testing Strategy
+
+### Test Categories
+1. **Unit Tests**: Individual component testing with mocked dependencies
+2. **Integration Tests**: Database and external service integration
+3. **API Tests**: End-to-end API endpoint testing
+
+### Test Coverage Goals
+- **Line Coverage**: >35% (Current: 37.3%)
+- **Branch Coverage**: >30% (Current: 33.8%)
+- **Critical Path Coverage**: 100%
+
+### Test Dependencies
+- **xUnit**: Testing framework
+- **Moq**: Mocking framework
+- **Microsoft.EntityFrameworkCore.InMemory**: In-memory database for testing
+- **coverlet.collector**: Code coverage collection
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Write tests for new functionality
+4. Ensure all tests pass (`dotnet test`)
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+### Development Guidelines
+- Follow Clean Architecture principles
+- Write unit tests for new features
+- Maintain test coverage above 35%
+- Use meaningful commit messages
+- Update documentation for API changes
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Troubleshooting
+
+### Common Issues
+
+**Docker Compose fails to start:**
+```bash
+# Clean up containers and volumes
+docker-compose down -v
+docker system prune -f
+docker-compose up -d --build
+```
+
+**Database connection issues:**
+```bash
+# Check if PostgreSQL is running
+docker ps | grep postgres
+
+# Check logs
+docker-compose logs postgres
+```
+
+**Kafka connection issues:**
+```bash
+# Check if Kafka is running
+docker ps | grep kafka
+
+# Check Kafka logs
+docker-compose logs kafka
+```
+
+**Test failures:**
+```bash
+# Clean and rebuild
+dotnet clean
+dotnet build
+dotnet test
+```

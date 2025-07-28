@@ -4,8 +4,7 @@ using IdleOrderService.Domain.Event;
 
 namespace IdleOrderService.Application.Users;
 
-public class RegisterUserCommandHandler(IEventBus eventBus,
-    IEventStore eventStore) : IRequestHandler<RegisterUserCommand, UserDto>
+public class RegisterUserCommandHandler(IEventStore eventStore) : IRequestHandler<RegisterUserCommand, UserDto>
 {
     public async Task<UserDto> HandleAsync(RegisterUserCommand request, CancellationToken cancellationToken)
     {
