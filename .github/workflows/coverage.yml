@@ -38,6 +38,10 @@ jobs:
       - name: Extract coverage percentage
         run: |
           xml_file=$(find . -name 'coverage.cobertura.xml' | head -n 1)
+          if [ -z "$xml_file" ]; then
+            echo "❌ Error: coverage.cobertura.xml file not found."
+            exit 1
+          fi
           echo "Parsing coverage file: $xml_file"
           line_rate=$(xmllint --xpath 'string(/coverage/@line-rate)' "$xml_file")
           percent=$(awk "BEGIN { printf \"%.2f\", $line_rate * 100 }")
