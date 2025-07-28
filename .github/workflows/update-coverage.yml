@@ -15,6 +15,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        ref: ${{ github.ref }}
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -172,21 +173,31 @@ jobs:
 
     - name: Commit and push changes
       run: |
+        # Configure git
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add README.md
-        # Check for unstaged changes
-        if ! git diff --quiet; then
-          echo "Unstaged changes detected."
-        fi
         
-        # Check for staged changes
-        if ! git diff --staged --quiet; then
-          echo "Staged changes detected. Committing changes."
-          git commit -m "📊 Update coverage statistics: ${{ steps.coverage.outputs.line_coverage }} line, ${{ steps.coverage.outputs.branch_coverage }} branch"
+        # Get current branch name
+        BRANCH_NAME=${GITHUB_REF#refs/heads/}
+        echo "Current branch: $BRANCH_NAME"
+        
+        # Check if we're on a branch
+        if [ "$BRANCH_NAME" != "HEAD" ]; then
+          echo "On branch: $BRANCH_NAME"
+          
+          # Add changes
+          git add README.md
+          
+          # Check for staged changes
+          if ! git diff --staged --quiet; then
+            echo "Staged changes detected. Committing changes."
+            git commit -m "📊 Update coverage statistics: ${{ steps.coverage.outputs.line_coverage }} line, ${{ steps.coverage.outputs.branch_coverage }} branch"
+            
+            # Push changes
+            git push origin $BRANCH_NAME
+          else
+            echo "No changes to commit."
+          fi
         else
-          echo "No changes to commit."
+          echo "Not on a branch, skipping commit and push."
         fi
-        
-        # Push changes
-        git push
