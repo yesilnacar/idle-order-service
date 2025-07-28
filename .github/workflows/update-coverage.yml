@@ -162,5 +162,18 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add README.md
-        git diff --quiet && git diff --staged --quiet || git commit -m "📊 Update coverage statistics: ${{ steps.coverage.outputs.line_coverage }} line, ${{ steps.coverage.outputs.branch_coverage }} branch"
-        git push 
+        # Check for unstaged changes
+        if ! git diff --quiet; then
+          echo "Unstaged changes detected."
+        fi
+        
+        # Check for staged changes
+        if ! git diff --staged --quiet; then
+          echo "Staged changes detected. Committing changes."
+          git commit -m "📊 Update coverage statistics: ${{ steps.coverage.outputs.line_coverage }} line, ${{ steps.coverage.outputs.branch_coverage }} branch"
+        else
+          echo "No changes to commit."
+        fi
+        
+        # Push changes
+        git push
