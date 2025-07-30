@@ -21,7 +21,7 @@ services.AddDbContextPool<AppDbContext>(options =>
 });
 services.AddInfra();
 
-// services.AddSingleton<IEventBus, InMemoryEventBus>();
+// services.AddSingleton<IEventBus, InMemoryEventBus>(); 
 services.AddSingleton<IEventBus, KafkaEventBus>();
 
 services.AddScoped<IMediator, Mediator>();

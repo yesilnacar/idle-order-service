@@ -1,0 +1,197 @@
+name: Update Coverage Statistics
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  update-coverage:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        ref: ${{ github.ref }}
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Install ReportGenerator
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+    - name: Install XML tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libxml2-utils
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore
+
+    - name: Run tests with coverage
+      run: |
+        dotnet test --collect:"XPlat Code Coverage" --results-directory ./TestResults --no-build
+        reportgenerator -reports:./TestResults/*/coverage.cobertura.xml -targetdir:./TestResults/coverage-report -reporttypes:Html
+
+    - name: Extract coverage data
+      id: coverage
+      run: |
+        # Extract line coverage percentage using xmllint
+        LINE_COVERAGE=$(xmllint --xpath "string(//coverage/@line-rate)" ./TestResults/*/coverage.cobertura.xml | awk '{printf "%.1f%%", $1 * 100}')
+        BRANCH_COVERAGE=$(xmllint --xpath "string(//coverage/@branch-rate)" ./TestResults/*/coverage.cobertura.xml | awk '{printf "%.1f%%", $1 * 100}')
+        
+        # Extract test count
+        TEST_COUNT=$(xmllint --xpath "count(//coverage/packages/package/classes/class)" ./TestResults/*/coverage.cobertura.xml)
+        
+        # Extract covered/total lines
+        COVERED_LINES=$(xmllint --xpath "sum(//coverage/packages/package/classes/class/lines/line/@hits)" ./TestResults/*/coverage.cobertura.xml)
+        TOTAL_LINES=$(xmllint --xpath "count(//coverage/packages/package/classes/class/lines/line)" ./TestResults/*/coverage.cobertura.xml)
+        
+        # Extract covered/total branches
+        COVERED_BRANCHES=$(xmllint --xpath "sum(//coverage/packages/package/classes/class/lines/line/conditions/condition[@covered='true']/@number)" ./TestResults/*/coverage.cobertura.xml)
+        TOTAL_BRANCHES=$(xmllint --xpath "sum(//coverage/packages/package/classes/class/lines/line/conditions/condition/@number)" ./TestResults/*/coverage.cobertura.xml)
+        
+        # Set default values if empty
+        LINE_COVERAGE=${LINE_COVERAGE:-"0.0%"}
+        BRANCH_COVERAGE=${BRANCH_COVERAGE:-"0.0%"}
+        TEST_COUNT=${TEST_COUNT:-"0"}
+        COVERED_LINES=${COVERED_LINES:-"0"}
+        TOTAL_LINES=${TOTAL_LINES:-"0"}
+        COVERED_BRANCHES=${COVERED_BRANCHES:-"0"}
+        TOTAL_BRANCHES=${TOTAL_BRANCHES:-"0"}
+        
+        echo "line_coverage=$LINE_COVERAGE" >> $GITHUB_OUTPUT
+        echo "branch_coverage=$BRANCH_COVERAGE" >> $GITHUB_OUTPUT
+        echo "test_count=$TEST_COUNT" >> $GITHUB_OUTPUT
+        echo "covered_lines=$COVERED_LINES" >> $GITHUB_OUTPUT
+        echo "total_lines=$TOTAL_LINES" >> $GITHUB_OUTPUT
+        echo "covered_branches=$COVERED_BRANCHES" >> $GITHUB_OUTPUT
+        echo "total_branches=$TOTAL_BRANCHES" >> $GITHUB_OUTPUT
+        
+        echo "Coverage Data:"
+        echo "Line Coverage: $LINE_COVERAGE"
+        echo "Branch Coverage: $BRANCH_COVERAGE"
+        echo "Test Count: $TEST_COUNT"
+        echo "Covered Lines: $COVERED_LINES/$TOTAL_LINES"
+        echo "Covered Branches: $COVERED_BRANCHES/$TOTAL_BRANCHES"
+
+    - name: Update README with coverage data
+      run: |
+        # Create a Python script to update README
+        cat > update_readme.py << 'EOF'
+        import re
+        import sys
+        
+        # Get coverage data from environment
+        line_coverage = "${{ steps.coverage.outputs.line_coverage }}"
+        branch_coverage = "${{ steps.coverage.outputs.branch_coverage }}"
+        test_count = "${{ steps.coverage.outputs.test_count }}"
+        covered_lines = "${{ steps.coverage.outputs.covered_lines }}"
+        total_lines = "${{ steps.coverage.outputs.total_lines }}"
+        covered_branches = "${{ steps.coverage.outputs.covered_branches }}"
+        total_branches = "${{ steps.coverage.outputs.total_branches }}"
+        
+        # Read README
+        with open('README.md', 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Update coverage badge
+        content = re.sub(
+            r'\[!\[Code Coverage\]\(https://img\.shields\.io/badge/coverage-[^)]+\)\]',
+            f'[![Code Coverage](https://img.shields.io/badge/coverage-{line_coverage}-brightgreen)]',
+            content
+        )
+        
+        # Update coverage statistics table
+        content = re.sub(
+            r'\| \*\*Line Coverage\*\* \| [^|]+ \|',
+            f'| **Line Coverage** | {line_coverage} ({covered_lines}/{total_lines} lines) |',
+            content
+        )
+        
+        content = re.sub(
+            r'\| \*\*Branch Coverage\*\* \| [^|]+ \|',
+            f'| **Branch Coverage** | {branch_coverage} ({covered_branches}/{total_branches} branches) |',
+            content
+        )
+        
+        content = re.sub(
+            r'\| \*\*Total Tests\*\* \| [^|]+ \|',
+            f'| **Total Tests** | {test_count} tests |',
+            content
+        )
+        
+        # Update current coverage in text
+        content = re.sub(
+            r'\*\*33\.5% line coverage\*\*',
+            f'**{line_coverage} line coverage**',
+            content
+        )
+        
+        content = re.sub(
+            r'\*\*30\.8% branch coverage\*\*',
+            f'**{branch_coverage} branch coverage**',
+            content
+        )
+        
+        # Update coverage goals
+        content = re.sub(
+            r'- \*\*Line Coverage\*\*: >30% \(Current: [^)]+\)',
+            f'- **Line Coverage**: >30% (Current: {line_coverage})',
+            content
+        )
+        
+        content = re.sub(
+            r'- \*\*Branch Coverage\*\*: >25% \(Current: [^)]+\)',
+            f'- **Branch Coverage**: >25% (Current: {branch_coverage})',
+            content
+        )
+        
+        # Update development guidelines
+        content = re.sub(
+            r'- Maintain test coverage above 30% \(Current: [^)]+\)',
+            f'- Maintain test coverage above 30% (Current: {line_coverage})',
+            content
+        )
+        
+        # Write updated README
+        with open('README.md', 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        print(f"Updated README with coverage data: {line_coverage} line, {branch_coverage} branch")
+        EOF
+        
+        python3 update_readme.py
+
+    - name: Commit and push changes
+      run: |
+        # Configure git
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        if [[ "$GITHUB_REF" == refs/heads/* ]]; then
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          echo "On branch: $BRANCH_NAME"
+          
+          # Add changes
+          git add README.md
+          
+          # Check for staged changes
+          if ! git diff --staged --quiet; then
+            echo "Staged changes detected. Committing changes."
+            git commit -m "📊 Update coverage statistics: ${{ steps.coverage.outputs.line_coverage }} line, ${{ steps.coverage.outputs.branch_coverage }} branch"
+            git push origin $BRANCH_NAME
+          else
+            echo "No changes to commit."
+          fi
+        else
+          echo "Not on a branch (likely a pull request or detached HEAD), skipping commit and push."
+        fi
