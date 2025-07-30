@@ -177,12 +177,8 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         
-        # Get current branch name
-        BRANCH_NAME=${GITHUB_REF#refs/heads/}
-        echo "Current branch: $BRANCH_NAME"
-        
-        # Check if we're on a branch
-        if [ "$BRANCH_NAME" != "HEAD" ]; then
+        if [[ "$GITHUB_REF" == refs/heads/* ]]; then
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
           echo "On branch: $BRANCH_NAME"
           
           # Add changes
@@ -192,12 +188,10 @@ jobs:
           if ! git diff --staged --quiet; then
             echo "Staged changes detected. Committing changes."
             git commit -m "📊 Update coverage statistics: ${{ steps.coverage.outputs.line_coverage }} line, ${{ steps.coverage.outputs.branch_coverage }} branch"
-            
-            # Push changes
             git push origin $BRANCH_NAME
           else
             echo "No changes to commit."
           fi
         else
-          echo "Not on a branch, skipping commit and push."
+          echo "Not on a branch (likely a pull request or detached HEAD), skipping commit and push."
         fi
