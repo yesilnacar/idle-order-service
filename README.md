@@ -1,7 +1,7 @@
 # IdleOrderService
 
-[![.NET](https://github.com/your-username/IdleOrderService/actions/workflows/dotnet.yml/badge.svg)](https://github.com/your-username/IdleOrderService/actions/workflows/dotnet.yml)
-[![Code Coverage](https://img.shields.io/badge/coverage-33.5%25-brightgreen)](https://github.com/your-username/IdleOrderService)
+[![.NET](https://github.com/your-username/IdleOrderService/actions/workflows/dotnet.yml/badge.svg)](https://github.com/yesilnacar/IdleOrderService/actions/workflows/dotnet.yml)
+[![Code Coverage](https://img.shields.io/badge/coverage-33.5%25-brightgreen)](https://github.com/yesilnacar/IdleOrderService)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 IdleOrderService is a multi-layered .NET project that implements a clean architecture pattern with event-driven design. The project manages user registration and order processing with comprehensive unit testing coverage.
